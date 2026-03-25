@@ -1,2 +1,6 @@
 langgraph
 langchain
+langchain-core
+langchain-community
+langchain-groq
+-e .
