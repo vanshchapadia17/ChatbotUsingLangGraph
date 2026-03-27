@@ -3,4 +3,7 @@ langchain
 langchain-core
 langchain-community
 langchain-groq
+langchain-huggingface
+huggingface_hub
+python-dotenv
 -e .
