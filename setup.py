@@ -18,7 +18,7 @@ def get_requirements(file_path:str)->List[str]:
     return requirements
 
 setup(
-name='CropAI',
+name='LangraphChatbot',
 version='0.0.1',
 author='Vanshchapadia',
 author_email='chapadiav01@gmail.com',
