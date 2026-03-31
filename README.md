@@ -1,6 +1,6 @@
 "# LangGraph Chatbot with Persistent Memory
 
-A conversational AI chatbot built using **LangGraph** , powered by the DeepSeek-R1 model from HuggingFace. This chatbot maintains conversation history and provides intelligent responses with support for persistent memory across sessions.
+A conversational AI chatbot built using **LangGraph** , **Streamlit** , powered by the DeepSeek-R1 model from HuggingFace. This chatbot maintains conversation history and provides intelligent responses with support for persistent memory across sessions.
 
 ## Features
 

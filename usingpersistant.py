@@ -1,4 +1,9 @@
 import os
+import sys
+
+from exception import CustomException
+from logger import logging
+
 import re
 from dotenv import load_dotenv
 from langgraph.graph import StateGraph, START, END
@@ -10,6 +15,7 @@ from langchain_huggingface import HuggingFaceEndpoint, ChatHuggingFace
 
 # ── Environment ──────────────────────────────────────────────
 load_dotenv()
+logging.info("dot env loaded successfully.")
 
 # ── LLM Setup ────────────────────────────────────────────────
 llm = HuggingFaceEndpoint(
@@ -21,6 +27,7 @@ llm = HuggingFaceEndpoint(
     provider="auto",
     huggingfacehub_api_token=os.getenv("HUGGINGFACEHUB_API_TOKEN")
 )
+logging.info("LLM initialized successfully.")
 
 chat_model = ChatHuggingFace(llm=llm, verbose=False)  
 
@@ -30,6 +37,7 @@ SYSTEM_MESSAGE = SystemMessage(content=(
     "Remember everything the user tells you in the conversation. "
     "Give clear and concise answers."
 ))
+logging.info("System prompt defined successfully.")
 
 # ── State ─────────────────────────────────────────────────────
 class ChatState(TypedDict):
@@ -37,13 +45,21 @@ class ChatState(TypedDict):
 
 # ── Clean <think> tags from DeepSeek ─────────────────────────
 def clean_response(text: str) -> str:
-    return re.sub(r'<think>.*?</think>', '', text, flags=re.DOTALL).strip()
+    try:
+        return re.sub(r'<tool_call>.*?<tool_call>', '', text, flags=re.DOTALL).strip()
+    except Exception as e:
+        logging.error(f"Error cleaning response: {str(e)}")
+        return text.strip()
 
 # ── Node ──────────────────────────────────────────────────────
 def chat_node(state: ChatState):
     full_messages = [SYSTEM_MESSAGE] + state['messages']
-    response = chat_model.invoke(full_messages)
-    return {'messages': [response]}
+    try:
+        response = chat_model.invoke(full_messages)
+        return {'messages': [response]}
+    except Exception as e:
+        logging.error(f"Error in chat_node: {str(e)}")
+        raise CustomException(str(e), sys)
 
 # ── Graph ─────────────────────────────────────────────────────
 def build_graph():
@@ -55,28 +71,33 @@ def build_graph():
 
 # ── Main ──────────────────────────────────────────────────────
 def main():
-    chatbot = build_graph()
-    config = {'configurable': {'thread_id': '1'}}
+    try:
+        chatbot = build_graph()
+        config = {'configurable': {'thread_id': '1'}}
 
-    print(" LangGraph Chatbot started! Type 'bye' to exit.\n")
+        print(" LangGraph Chatbot started! Type 'bye' to exit.\n")
+    
+        while True:
+            user_input = input("You: ").strip()
 
-    while True:
-        user_input = input("You: ").strip()
+            if not user_input:                  # ✅ skip empty input
+                continue
 
-        if not user_input:                  # ✅ skip empty input
-            continue
+            if user_input.lower() in ['exit', 'quit', 'bye']:
+                print("👋 Goodbye!")
+                break
 
-        if user_input.lower() in ['exit', 'quit', 'bye']:
-            print("👋 Goodbye!")
-            break
+            response = chatbot.invoke(
+                {'messages': [HumanMessage(content=user_input)]},
+                config=config
+            )
 
-        response = chatbot.invoke(
-            {'messages': [HumanMessage(content=user_input)]},
-            config=config
-        )
+            raw = response['messages'][-1].content
+            print(f"LangGraphBot: {clean_response(raw)}\n")  # ✅ no <think> tags
 
-        raw = response['messages'][-1].content
-        print(f"LangGraphBot: {clean_response(raw)}\n")  # ✅ no <think> tags
+    except Exception as e:
+        logging.error(f"Error in main: {str(e)}")
+        raise CustomException(str(e), sys)
 
 if __name__ == "__main__":
     main()

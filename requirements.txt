@@ -6,4 +6,6 @@ langchain-groq
 langchain-huggingface
 huggingface_hub
 python-dotenv
+numpy
+pandas
 -e .

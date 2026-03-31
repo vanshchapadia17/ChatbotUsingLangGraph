@@ -1,4 +1,9 @@
 import os
+import sys
+
+from exception import CustomException
+from logger import logging
+
 from dotenv import load_dotenv
 
 from langgraph.graph import StateGraph,START,END, StateGraph
@@ -8,6 +13,7 @@ from typing import TypedDict,Annotated
 from langchain_huggingface import HuggingFaceEndpoint,ChatHuggingFace
 
 load_dotenv()
+logging.info("dot env loaded successfully.")
 
 llm = HuggingFaceEndpoint(
     repo_id="deepseek-ai/DeepSeek-R1",  # or any free model
@@ -19,6 +25,7 @@ llm = HuggingFaceEndpoint(
     provider="novita",
     huggingfacehub_api_token = os.getenv("HUGGINGFACEHUB_API_TOKEN")
 )
+logging.info("LLM initialized successfully.")
 
 chat_model = ChatHuggingFace(llm=llm,verbose=True) 
 
@@ -27,15 +34,20 @@ class ChatState(TypedDict):
     messages: Annotated[list[BaseMessage], add_messages] 
 
 def chat_node(state:ChatState):
-    #take users query 
-    messages=state['messages']
+    try:
+        #take users query 
+        messages=state['messages']
 
-    #generate response using llm
-    response = chat_model.invoke(messages)
+        #generate response using llm
+        response = chat_model.invoke(messages)
+        logging.info("model invoked successfully.")
 
-    #response to store
-    return {'messages': [response]}
-
+        #response to store
+        return {'messages': [response]}
+    
+    except Exception as e:
+        logging.error(f"Error in chat_node: {str(e)}")
+        raise CustomException(str(e),sys)
 
 
 graph = StateGraph(ChatState)
@@ -57,3 +69,4 @@ while True:
 
     # Print the chatbot's response
     print('AI:', response['messages'][-1].content)
+
