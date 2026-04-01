@@ -1,6 +1,6 @@
 import streamlit as st
-from backend import chatbot
-from langchain_core.messages import HumanMessage
+from backend import llm
+from langchain_core.messages import HumanMessage,AIMessage
 import uuid
 
 st.set_page_config(
@@ -62,13 +62,21 @@ if user_input:
             "thread_id": st.session_state.current_chat
         }
     }
+    
+    lc_messages = []
 
-    response = chatbot.invoke(
-        {'messages': [HumanMessage(content=user_input)]},
+    for msg in messages:
+        if msg["role"] == "user":
+            lc_messages.append(HumanMessage(content=msg["content"]))
+        else:
+            lc_messages.append(AIMessage(content=msg["content"]))
+
+    response = llm.invoke(
+        lc_messages,
         config=config
     )
 
-    ai_response = response['messages'][-1].content
+    ai_response = response.content
 
     # Save AI response
     messages.append({"role": "assistant", "content": ai_response})

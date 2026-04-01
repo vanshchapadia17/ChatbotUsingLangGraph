@@ -9,25 +9,22 @@ from langgraph.checkpoint.memory import MemorySaver
 from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
 from typing import TypedDict, Annotated
 
-from langchain_huggingface import HuggingFaceEndpoint, ChatHuggingFace
-
+#from langchain_huggingface import HuggingFaceEndpoint, ChatHuggingFace
+from langchain_groq import ChatGroq
 
 # ── Environment ──────────────────────────────────────────────
 load_dotenv()
 
 
 # ── LLM Setup ────────────────────────────────────────────────
-llm = HuggingFaceEndpoint(
-    repo_id="deepseek-ai/DeepSeek-R1",
-    task="text-generation",
-    max_new_tokens=512,
-    do_sample=False,
-    repetition_penalty=1.03,
-    provider="auto",
-    huggingfacehub_api_token=os.getenv("HUGGINGFACEHUB_API_TOKEN")
+llm = ChatGroq(
+    model="llama-3.1-8b-instant",
+    temperature=0.7,
+    max_tokens=512,
+    groq_api_key=os.getenv("GROQ_API_KEY")
 )
 
-chat_model = ChatHuggingFace(llm=llm, verbose=False)
+#chat_model = ChatGroq(llm=llm, verbose=False)
 
 
 # ── System Prompt ─────────────────────────────────────────────
@@ -43,7 +40,7 @@ class ChatState(TypedDict):
     messages: Annotated[list[BaseMessage], add_messages]
 
 
-# ── Clean DeepSeek <tool_call> tags ───────────────────────────
+# ── Clean Groq <tool_call> tags ───────────────────────────
 def clean_response(text: str) -> str:
     return re.sub(r'<tool_call>.*?</tool_call>', '', text, flags=re.DOTALL).strip()
 
@@ -51,7 +48,7 @@ def clean_response(text: str) -> str:
 # ── Chat Node ────────────────────────────────────────────────
 def chat_node(state: ChatState):
     full_messages = [SYSTEM_MESSAGE] + state['messages']
-    response = chat_model.invoke(full_messages)
+    response = llm.invoke(full_messages)
     return {'messages': [response]}
 
 
@@ -85,12 +82,12 @@ def main():
             print("👋 Goodbye!")
             break
 
-        response = chatbot.invoke(
-            {'messages': [HumanMessage(content=user_input)]},
+        result = chatbot.invoke(
+            {"messages": [HumanMessage(content=user_input)]},
             config=config
         )
 
-        raw = response['messages'][-1].content
+        raw = result["messages"][-1].content
         print(f"LangGraphBot: {clean_response(raw)}\n")
 
 
