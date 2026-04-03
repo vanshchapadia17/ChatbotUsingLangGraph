@@ -12,6 +12,10 @@ from typing import TypedDict, Annotated
 from langchain_groq import ChatGroq
 
 import sqlite3
+#----------------- database -------------
+
+conn = sqlite3.connect(database='chatbot_history.db', check_same_thread=False)
+
 
 # ── Load Environment ─────────────────────────────
 load_dotenv()
@@ -49,6 +53,7 @@ def chat_node(state: ChatState):
     return {
         'messages': state['messages'] + [response]
     }
+checkpointer = SqliteSaver(conn=conn)
 
 # ── Build Graph ────────────────────────────────
 def build_graph():
@@ -58,7 +63,14 @@ def build_graph():
     graph.add_edge(START, 'chat_node')
     graph.add_edge('chat_node', END)
 
-    return graph.compile(checkpointer=SqliteSaver())
+    return graph.compile(checkpointer=checkpointer)
 
 # ── Export Chatbot (used in Streamlit) ─────────
 chatbot = build_graph()
+
+def retrieve_thread():
+    all_threads = set()
+    for checkpoint in checkpointer.list(None):
+        all_threads.add(checkpoint.config['configurable']['thread_id'])
+
+    return list(all_threads)
