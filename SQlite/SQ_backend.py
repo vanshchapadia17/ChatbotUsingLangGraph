@@ -4,12 +4,14 @@ from dotenv import load_dotenv
 
 from langgraph.graph import StateGraph, START, END
 from langgraph.graph.message import add_messages
-from langgraph.checkpoint.memory import MemorySaver
+from langgraph.checkpoint.sqlite import SqliteSaver
 
 from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
 from typing import TypedDict, Annotated
 
 from langchain_groq import ChatGroq
+
+import sqlite3
 
 # ── Load Environment ─────────────────────────────
 load_dotenv()
@@ -56,7 +58,7 @@ def build_graph():
     graph.add_edge(START, 'chat_node')
     graph.add_edge('chat_node', END)
 
-    return graph.compile(checkpointer=MemorySaver())
+    return graph.compile(checkpointer=SqliteSaver())
 
 # ── Export Chatbot (used in Streamlit) ─────────
 chatbot = build_graph()
