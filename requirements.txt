@@ -9,4 +9,5 @@ python-dotenv
 numpy
 pandas
 streamlit
+langgraph-checkpoint-sqlite
 -e .
